@@ -26,7 +26,8 @@ class Utils(object):
         i = 0
         with open(input_file) as f:
             for line in f:
-                data.append([["START", "*"], ["START", "*"]] + [['*', word] for word in line.split()])
+                # data.append([["START", "*"], ["START", "*"]] + [['*', word] for word in line.split()])
+                data.append(["*", "*"] + [word for word in line.split()])
         return data
 
     def print_to_file(self, result, output_file):
