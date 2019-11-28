@@ -105,3 +105,4 @@ venv.bak/
 .idea/
 e.mle
 q.mle
+data/greedy_hmm_output.txt
