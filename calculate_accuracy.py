@@ -1,12 +1,12 @@
 
 
-def calculate_accuracy():
+def calculate_accuracy(predicted_txt,actual_txt):
     predicted = []
     actual = []
-    with open('data/ass1-tagger-dev') as f:
+    with open(predicted_txt) as f:
         for line in f:
             actual.append([word.rsplit('/', 1)[1] for word in line.split()])
-    with open('data/greedy_hmm_output.txt') as f:
+    with open(actual_txt) as f:
         for line in f:
             predicted.append([word.rsplit('/', 1)[1] for word in line.split()])
     good = count = 0
