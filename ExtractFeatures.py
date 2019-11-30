@@ -9,7 +9,7 @@ def load_input_file(input_file):
     word_dic = {}
     with open(input_file) as f:
         for line in f:
-            sentence_formatted = [["START", "*"], ["START", "*"]]
+            sentence_formatted = [["START", None], ["START", None]]
             for part in line.split():
                 word, tag = part.rsplit('/', 1)
                 sentence_formatted.append([tag, word])
@@ -37,8 +37,8 @@ def create_features():
             feat["t_i_prev_prev"] = sentence[i - 2][TAG] + "_" + sentence[i - 1][TAG]
             feat["w_i_prev"] = sentence[i - 1][WORD]
             feat["w_i_prev_prev"] = sentence[i - 2][WORD]
-            feat["w_i_next"] = sentence[i + 1][WORD] if i < len(sentence) - 1 else "*"
-            feat["w_i_next_next"] = sentence[i + 2][WORD] if i < len(sentence) - 2 else "*"
+            feat["w_i_next"] = sentence[i + 1][WORD] if i < len(sentence) - 1 else None
+            feat["w_i_next_next"] = sentence[i + 2][WORD] if i < len(sentence) - 2 else None
             features.append(sentence[i][TAG] + ' ' + " ".join([f"{k}={v}" for k, v in feat.items()]))
     return features
 

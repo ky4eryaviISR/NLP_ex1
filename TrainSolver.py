@@ -1,11 +1,12 @@
 from datetime import datetime
 import pickle
+from multiprocessing import cpu_count
 from sys import argv
 
 from sklearn.datasets import load_svmlight_file
 from sklearn.linear_model import LogisticRegression
 
-start = datetime.now()
+
 
 def replace_labels():
     with open("features_vec_file", "w") as f_result:
@@ -42,9 +43,13 @@ feature_labels = get_features()
 replace_labels()
 
 x_train, y_train = load_svmlight_file("features_vec_file")
-model = LogisticRegression()
-model.fit(x_train, y_train)
+for sol in ['newton-cg', 'lbfgs', 'sag', 'saga']:
+    print(sol)
+    start = datetime.now()
+    model = LogisticRegression(n_jobs=cpu_count(), solver=sol)
+    model.fit(x_train, y_train)
+    print(datetime.now()-start)
+
 
 pickle.dump(model, open(out_file, 'wb'))
 
-print(datetime.now()-start)
