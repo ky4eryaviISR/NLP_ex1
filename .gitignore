@@ -106,3 +106,4 @@ venv.bak/
 e.mle
 q.mle
 data/greedy_hmm_output.txt
+features_file
