@@ -1,6 +1,6 @@
 
 
-def calculate_accuracy(predicted_txt,actual_txt):
+def calculate_accuracy(predicted_txt, actual_txt):
     predicted = []
     actual = []
     with open(predicted_txt) as f:

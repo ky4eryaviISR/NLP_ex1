@@ -34,14 +34,4 @@ if __name__ == "__main__":
     sentences = utils.load_input_file(input_f)
     result = greedyStart(sentences)
     utils.print_to_file(result, output_f)
-    calculate_accuracy()
-
-    for i in range(20):
-        gamma = np.random.dirichlet(np.ones(3), size=1)[0]
-        print(gamma)
-        utils = Utils(gamma)
-        utils.load_q_and_load_e(q_output, e_output)
-        sentences = utils.load_input_file(input_f)
-        result = greedyStart(sentences)
-        utils.print_to_file(result, output_f)
-        calculate_accuracy()
+    calculate_accuracy(output_f, 'data/ass1-tagger-dev')

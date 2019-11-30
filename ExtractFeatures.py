@@ -3,6 +3,7 @@ from sys import argv
 WORD = 1
 TAG = 0
 
+
 def load_input_file(input_file):
     data = []
     word_dic = {}
@@ -10,19 +11,20 @@ def load_input_file(input_file):
         for line in f:
             sentence_formatted = [["START", "*"], ["START", "*"]]
             for part in line.split():
-                word, tag = part.rsplit('/',1)
+                word, tag = part.rsplit('/', 1)
                 sentence_formatted.append([tag, word])
                 word_dic[word] = 1 if word not in word_dic else word_dic[word] + 1
             data.append(sentence_formatted)
     return data, word_dic
 
+
 def create_features():
     features = []
     for sentence in sentences:
-        for i in range(2,len(sentence)):
+        for i in range(2, len(sentence)):
             feat = {}
             word = sentence[i][WORD]
-            if words[word] < 5:
+            if word_count[word] < 5:
                 feat["isDigit"] = any([character.isdigit() for character in word])
                 feat["upperCase"] = any([character.isupper() for character in word])
                 feat["upperCase"] = any([character == '-' for character in word])
@@ -37,25 +39,22 @@ def create_features():
             else:
                 feat["W_i"] = word
             feat["t_i_prev"] = sentence[i - 1][TAG]
-            feat["t_i_prev_prev"] = sentence[i - 2][TAG] + " " + sentence[i - 1][TAG]
+            feat["t_i_prev_prev"] = sentence[i - 2][TAG] + "_" + sentence[i - 1][TAG]
             feat["w_i_prev"] = sentence[i - 1][WORD]
             feat["w_i_prev_prev"] = sentence[i - 2][WORD]
-            feat["w_i_next"] = sentence[i + 1][WORD] if i < len(sentence)-1 else "*"
-            feat["w_i_next_next"] = sentence[i + 2][WORD] if i < len(sentence)-2 else "*"
-            features.append([sentence[i][TAG], feat])
+            feat["w_i_next"] = sentence[i + 1][WORD] if i < len(sentence) - 1 else "*"
+            feat["w_i_next_next"] = sentence[i + 2][WORD] if i < len(sentence) - 2 else "*"
+            features.append(sentence[i][TAG] + ' ' + " ".join([f"{k}={v}" for k, v in feat.items()]))
     return features
 
-def print_to_file(features):
+
+def print_to_file():
     with open(out_file, 'w') as f:
-        for feature in features:
-            str_out = feature[0]+" "+" ".join([f"{k}={str(v)}" for k, v in feature[1].items()])
-            f.write(str_out+"\n")
+            f.write("".join([s+"\n" for s in feat_sentences]))
+
 
 input_file = argv[1]
 out_file = argv[2]
-sentences, words = load_input_file(input_file)
-create_features()
-print_to_file(create_features())
-
-print("")
-
+sentences, word_count = load_input_file(input_file)
+feat_sentences = create_features()
+print_to_file()

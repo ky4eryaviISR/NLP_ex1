@@ -91,15 +91,8 @@ if __name__ == "__main__":
     args = []
     for i in range(0, num_sentences, steps):
         args.append([i, min(i+steps, num_sentences), sentences])
-    for i in range(1):
-        print("START NEW")
-        #gamma = np.random.dirichlet(np.ones(3), size=1)[0]
-        #print(gamma)
-        #utils.gamma1, utils.gamma2, utils.gamma3 = gamma
-
-        pool = mp.Pool(mp.cpu_count())
-        results = pool.starmap(viterbi_start, args)
-        results = reduce(lambda x, y: x + y, results)
-        utils.print_to_file(results, output_f)
-        #print(datetime.now() - start)
-        calculate_accuracy('viterbi_hmm_output.txt', '../data/ass1-tagger-dev')
+    pool = mp.Pool(mp.cpu_count())
+    results = pool.starmap(viterbi_start, args)
+    results = reduce(lambda x, y: x + y, results)
+    utils.print_to_file(results, output_f)
+    calculate_accuracy('data/viterbi_hmm_output.txt', 'data/ass1-tagger-dev')
