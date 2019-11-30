@@ -27,15 +27,10 @@ def create_features():
             if word_count[word] < 5:
                 feat["isDigit"] = any([character.isdigit() for character in word])
                 feat["upperCase"] = any([character.isupper() for character in word])
-                feat["upperCase"] = any([character == '-' for character in word])
-                feat["suf_1"] = word[-1:]
-                feat["suf_2"] = word[-2:]
-                feat["suf_3"] = word[-3:]
-                feat["suf_4"] = word[-4:]
-                feat["pref_1"] = word[:1]
-                feat["pref_2"] = word[:2]
-                feat["pref_3"] = word[:3]
-                feat["pref_4"] = word[:4]
+                feat["hyphen"] = any([character == '-' for character in word])
+                for j in range(1, 5, 1):
+                    feat["suf_"+str(j)] = word[-j:]
+                    feat["pref_"+str(j)] = word[:j]
             else:
                 feat["W_i"] = word
             feat["t_i_prev"] = sentence[i - 1][TAG]

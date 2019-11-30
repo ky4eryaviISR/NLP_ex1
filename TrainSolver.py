@@ -1,9 +1,11 @@
+from datetime import datetime
 import pickle
 from sys import argv
 
 from sklearn.datasets import load_svmlight_file
 from sklearn.linear_model import LogisticRegression
 
+start = datetime.now()
 
 def replace_labels():
     with open("features_vec_file", "w") as f_result:
@@ -14,7 +16,7 @@ def replace_labels():
             f_result.write(" ".join(vector) + "\n")
 
     with open('features_map_file', "w") as f:
-        f.write("".join([f"{key} {value}\n" for key, value in feature_labels.items()]))
+        f.write("\n".join([f"{key} {value}" for key, value in feature_labels.items()]))
 
 def get_features():
     features_labels = {}
@@ -44,3 +46,5 @@ model = LogisticRegression()
 model.fit(x_train, y_train)
 
 pickle.dump(model, open(out_file, 'wb'))
+
+print(datetime.now()-start)

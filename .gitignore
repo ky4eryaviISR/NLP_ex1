@@ -109,3 +109,4 @@ data/greedy_hmm_output.txt
 data/
 features_map_file
 features_vec_file
+model_file
