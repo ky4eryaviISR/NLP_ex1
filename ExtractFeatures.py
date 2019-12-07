@@ -1,4 +1,3 @@
-import os
 from sys import argv
 from datetime import datetime
 

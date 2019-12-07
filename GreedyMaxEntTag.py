@@ -25,10 +25,11 @@ out_file = argv[4]
 sentences = load_input_file()
 feature_file = open(feature_file).read().split('\n')
 
-words = {key for key in feature_file[1].split()}
-label_2_index = {line.split()[0]: line.split()[1] for line in feature_file[3:]}
-index_2_label = {line.split()[1]: line.split()[0] for line in feature_file[3:]}
+words = {key.split(':')[0] for key in feature_file[0].split()}
+label_2_index = {line.split()[0]: line.split()[1] for line in feature_file[1:]}
+index_2_label = {line.split()[1]: line.split()[0] for line in feature_file[1:]}
 model = pickle.load(open(model, 'rb'))
+
 def print_to_file(result, output_file):
     with open(output_file, "w") as f:
         for sentence in result:
@@ -41,7 +42,6 @@ def print_to_file(result, output_file):
 def convert_2_vector(features):
     vector = np.zeros(len(label_2_index))
     for k, v in features.items():
-        #print(f"{datetime.now() - start}: LOOP")
         feature = k+"="+str(v)
         if feature in label_2_index.keys():
             vector[int(label_2_index[feature])] = 1
@@ -81,23 +81,15 @@ def memm_greedy(sentences):
         w_n = sentence[1] if len(sentence) > 1 else None
         w_nn = sentence[2] if len(sentence) > 2 else None
         sent_list = list()
-        #print(f"{i} {datetime.now() - start}")
         for j in range(len(sentence)):
-            print(f"{datetime.now() - start}: get_features(sentence[j], t_p, t_pp, w_p, w_pp, w_n, w_nn)")
             features = get_features(sentence[j], t_p, t_pp, w_p, w_pp, w_n, w_nn)
-            print(f"{datetime.now() - start}: vector = convert_2_vector(features)")
             vector = convert_2_vector(features)
-            print(f"{datetime.now() - start}: tag_predicted = model.predict([vector])")
             tag_predicted = model.predict([vector])
-            print(f"{datetime.now() - start}: t_pp, w_pp, w_n = t_p, w_p, w_nn")
             t_pp, w_pp, w_n = t_p, w_p, w_nn
             w_p = sentence[j]
             w_nn = sentence[j+3] if len(sentence)-3 > j else None
-            print(f"{datetime.now() - start}: t_p = index_2_label[str(int(tag_predicted[0]))]")
             t_p = index_2_label[str(int(tag_predicted[0]))]
-            print(f"{datetime.now() - start}:sent_list.append((w_p+" "+t_p))")
             sent_list.append((w_p+"/"+t_p))
-            print(f"{datetime.now() - start}")
         res[i] = sent_list
     return res
 
@@ -105,14 +97,6 @@ def memm_greedy(sentences):
 if __name__ == '__main__':
     start = datetime.now()
     print(start)
-    # num_sentences = len(sentences)
-    # steps = math.ceil((num_sentences / mp.cpu_count()))
-    # args = []
-    # for i in range(0, num_sentences, steps):
-    #     args.append([i, min(i + steps, num_sentences), sentences])
-    # pool = mp.Pool(mp.cpu_count())
-    # results = pool.starmap(memm_greedy, args)
-    # results = reduce(lambda x, y: x + y, results)
     results = memm_greedy(sentences)
     with open(out_file, 'w') as f:
         f.write('\n'.join(' '.join(map(str, row)) for row in results))

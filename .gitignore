@@ -110,4 +110,7 @@ data/
 features_map_file
 features_vec_file
 model
-features_file
+feature_vec_file
+feature_file
+model_file
+feature_map_file

@@ -1,13 +1,22 @@
+import re
 from datetime import datetime
 import pickle
-from multiprocessing import cpu_count
 from sys import argv
 
 from sklearn.datasets import load_svmlight_file
 from sklearn.linear_model import LogisticRegression
 
-start = datetime.now()
-print(start)
+
+regular_expressions = {'^ness ': re.compile('\w+ness$'),
+                       '^0-9.0-9 ': re.compile("^\d+\.?\d+$"),
+                       "^A-Z": re.compile("[A-Z]+$"),
+                       "^ing": re.compile("\w+ing$"),
+                       "^ed": re.compile("\w+ed$"),
+                       "^-": re.compile("\w+-\w+$"),
+                       "^'": re.compile("'\w+$"),
+                       "^s": re.compile("\w+s$"),
+                       "^ion": re.compile("\w+ion$"),
+                       "^al": re.compile("\w+al$")}
 
 
 def replace_labels():
@@ -18,23 +27,18 @@ def replace_labels():
         sorted_features = sorted([feature_labels[word] for word in sentence.split()[1:]])
         vector = label + [str(feat) + ":1" for feat in sorted_features]
         vectors.append(vector)
-        find = sentence.find('W_i')
-        if find != -1:
-            word = sentence[find:].split(' ', 1)[0].split('=')[1]
-            find = sentence.find('t_i_prev_prev=')
-            t_prev_prev = sentence[find:].split(' ', 1)[0].split('=')[1]
-            if word not in word_prev_tags:
-                word_prev_tags[word] = set()
-            word_prev_tags[word].add(t_prev_prev)
+        find = sentence.find('w_i_prev=')
+        word = sentence[find:].split(' ', 1)[0].split('=')[1]
+        find = sentence.find('t_i_prev=')
+        t_prev = sentence[find:].split(' ', 1)[0].split('=')[1]
+        if word not in word_prev_tags:
+            word_prev_tags[word] = set()
+        word_prev_tags[word].add(t_prev)
 
-    with open("features_vec_file", "w") as f_result:
+    with open("feature_vec_file", "w") as f_result:
         f_result.write('\n'.join(' '.join(map(str, sl)) for sl in vectors))
-    with open('features_map_file', "w") as f:
-        f.write(" ".join([key[14:] for key in feature_labels.keys() if key.startswith('t_i_prev_prev')]))
-        f.write('\n')
-        f.write(" ".join([key[4:] for key in feature_labels.keys() if key.startswith('W_i')]))
-        f.write('\n')
-        f.write(' '.join([key+":"+"/".join([tag for tag in value]) for key,value in word_prev_tags.items()]))
+    with open('feature_map_file', "w") as f:
+        f.write(' '.join([key+"::"+"/".join([tag for tag in value]) for key, value in word_prev_tags.items()]))
         f.write('\n')
         f.write("\n".join([f"{key} {value}" for key, value in feature_labels.items()]))
 
@@ -63,12 +67,11 @@ tags = set([sentence.split()[0] for sentence in feat_sentences])
 feature_labels = get_features()
 replace_labels()
 
-x_train, y_train = load_svmlight_file("features_vec_file", zero_based=True)
+x_train, y_train = load_svmlight_file("feature_vec_file", zero_based=True)
 for sol in ['saga']:
     print(sol)
     print(datetime.now())
-    model = LogisticRegression(multi_class='auto', solver='saga',#n_jobs=cpu_count(),# solver=sol, multi_class='multinomial',
-                               tol=0.001)#, penalty='l2', max_iter=150)
+    model = LogisticRegression(multi_class='auto', solver='saga', tol=0.001)
     model.fit(x_train, y_train)
     print(model.score(x_train, y_train))
     print(datetime.now())
