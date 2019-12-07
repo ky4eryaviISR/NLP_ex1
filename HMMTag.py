@@ -22,12 +22,12 @@ prev_tag_list = utils.get_possible_prev_tag()
 cross_tags = utils.get_cross_tags()
 sentences = utils.load_input_file(input_f)
 
-def viterbi_start(start, stop, sentences):
+def viterbi_start(sentences):
 
-    for i in range(start, stop):
+    for i in range(len(sentences)):
         viterbi = [copy.deepcopy(cross_tags), copy.deepcopy(cross_tags)]
         viterbi[1]["START"]["START"] = 0
-
+        prev_tag_set = prev_prev_tag_set = ["START"]
         tags = []
         for j in range(2, len(sentences[i])):
             word = sentences[i][j][1]
@@ -39,10 +39,9 @@ def viterbi_start(start, stop, sentences):
                 emission = utils.getE(word, t_third)
                 if emission == -np.inf:
                     continue
-                for t_second in prev_tag_list[t_third]:
+                for t_second in prev_tag_set:
                     best_score = -np.inf
-                    first_tag = ""
-                    for t_first in prev_tag_list[t_second]:
+                    for t_first in prev_prev_tag_set:
                         new_score = calculate_score(emission,
                                                     t_third,
                                                     t_second,
@@ -52,8 +51,9 @@ def viterbi_start(start, stop, sentences):
                             best_score = new_score
                             word_score[t_third][t_second] = new_score
                             best_tags[t_third][t_second] = t_first
+            prev_prev_tag_set = prev_tag_set
+            prev_tag_set = list(utils.e_dict[word].keys())
 
-            #viterbi.pop(0)
             viterbi.append(word_score)
             tags.append(best_tags)
 
@@ -75,7 +75,7 @@ def viterbi_start(start, stop, sentences):
             prev_tag = sentences[i][index][0]
         sentences[i] = sentences[i][2:]
         #print(i)
-    return sentences[start: stop]
+    return sentences
 
 
 def calculate_score(emission, t, prev, prev_prev, viterbi):
@@ -86,13 +86,8 @@ def calculate_score(emission, t, prev, prev_prev, viterbi):
 
 
 if __name__ == "__main__":
-    num_sentences = len(sentences)
-    steps = math.ceil((num_sentences / mp.cpu_count()))
-    args = []
-    for i in range(0, num_sentences, steps):
-        args.append([i, min(i+steps, num_sentences), sentences])
-    pool = mp.Pool(mp.cpu_count())
-    results = pool.starmap(viterbi_start, args)
-    results = reduce(lambda x, y: x + y, results)
+    print(datetime.now())
+    results = viterbi_start(sentences)
     utils.print_to_file(results, output_f)
-    calculate_accuracy('data/viterbi_hmm_output.txt', 'data/ass1-tagger-dev')
+    calculate_accuracy('data/viterbi_hmm_output', 'data/ass1-tagger-dev')
+    print(datetime.now())

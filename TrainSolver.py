@@ -43,7 +43,7 @@ feature_labels = get_features()
 replace_labels()
 
 x_train, y_train = load_svmlight_file("features_vec_file")
-for sol in ['newton-cg', 'lbfgs', 'sag', 'saga']:
+for sol in ['saga']:
     print(sol)
     start = datetime.now()
     model = LogisticRegression(n_jobs=cpu_count(), solver=sol)
