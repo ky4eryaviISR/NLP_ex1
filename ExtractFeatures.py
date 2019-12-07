@@ -35,10 +35,14 @@ def create_features():
                 feat["W_i"] = word
             feat["t_i_prev"] = sentence[i - 1][TAG]
             feat["t_i_prev_prev"] = sentence[i - 2][TAG] + "_" + sentence[i - 1][TAG]
-            feat["w_i_prev"] = sentence[i - 1][WORD]
-            feat["w_i_prev_prev"] = sentence[i - 2][WORD]
-            feat["w_i_next"] = sentence[i + 1][WORD] if i < len(sentence) - 1 else None
-            feat["w_i_next_next"] = sentence[i + 2][WORD] if i < len(sentence) - 2 else None
+            if i > 2:
+                feat["w_i_prev"] = sentence[i - 1][WORD]
+            if i > 3:
+                feat["w_i_prev_prev"] = sentence[i - 2][WORD]
+            if i < len(sentence) - 1:
+                feat["w_i_next"] = sentence[i + 1][WORD]
+            if i < len(sentence) - 2:
+                feat["w_i_next_next"] = sentence[i + 2][WORD]
             features.append(sentence[i][TAG] + ' ' + " ".join([f"{k}={v}" for k, v in feat.items()]))
     return features
 

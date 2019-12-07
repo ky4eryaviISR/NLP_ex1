@@ -6,7 +6,8 @@ from sys import argv
 from sklearn.datasets import load_svmlight_file
 from sklearn.linear_model import LogisticRegression
 
-
+start = datetime.now()
+print(start)
 
 def replace_labels():
     with open("features_vec_file", "w") as f_result:
@@ -19,6 +20,7 @@ def replace_labels():
     with open('features_map_file', "w") as f:
         f.write("\n".join([f"{key} {value}" for key, value in feature_labels.items()]))
 
+#
 def get_features():
     features_labels = {}
     i = 0
@@ -42,14 +44,15 @@ tags = set([sentence.split()[0] for sentence in feat_sentences])
 feature_labels = get_features()
 replace_labels()
 
-x_train, y_train = load_svmlight_file("features_vec_file")
+x_train, y_train = load_svmlight_file("features_vec_file", zero_based=True)
 for sol in ['saga']:
     print(sol)
-    start = datetime.now()
-    model = LogisticRegression(n_jobs=cpu_count(), solver=sol)
+    print(datetime.now())
+    model = LogisticRegression(multi_class='auto', solver='saga',#n_jobs=cpu_count(),# solver=sol, multi_class='multinomial',
+                               tol=0.01)#, penalty='l2', max_iter=150)
     model.fit(x_train, y_train)
+    print(model.score(x_train, y_train))
     print(datetime.now()-start)
 
 
 pickle.dump(model, open(out_file, 'wb'))
-

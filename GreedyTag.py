@@ -1,4 +1,3 @@
-import random
 from sys import argv
 import operator
 from Utils import Utils
