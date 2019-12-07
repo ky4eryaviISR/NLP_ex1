@@ -1,4 +1,8 @@
+import os
 from sys import argv
+from datetime import datetime
+
+
 
 WORD = 1
 TAG = 0
@@ -10,10 +14,13 @@ def load_input_file(input_file):
     with open(input_file) as f:
         for line in f:
             sentence_formatted = [["START", None], ["START", None]]
+            prev_tag = "START"
             for part in line.split():
                 word, tag = part.rsplit('/', 1)
                 sentence_formatted.append([tag, word])
                 word_dic[word] = 1 if word not in word_dic else word_dic[word] + 1
+                # store all tags for word
+                prev_tag = tag
             data.append(sentence_formatted)
     return data, word_dic
 
@@ -35,14 +42,11 @@ def create_features():
                 feat["W_i"] = word
             feat["t_i_prev"] = sentence[i - 1][TAG]
             feat["t_i_prev_prev"] = sentence[i - 2][TAG] + "_" + sentence[i - 1][TAG]
-            if i > 2:
-                feat["w_i_prev"] = sentence[i - 1][WORD]
-            if i > 3:
-                feat["w_i_prev_prev"] = sentence[i - 2][WORD]
-            if i < len(sentence) - 1:
-                feat["w_i_next"] = sentence[i + 1][WORD]
-            if i < len(sentence) - 2:
-                feat["w_i_next_next"] = sentence[i + 2][WORD]
+            feat["w_i_prev"] = sentence[i - 1][WORD]
+            feat["w_i_prev_prev"] = sentence[i - 2][WORD]
+            feat["w_i_next"] = sentence[i + 1][WORD] if i < len(sentence) - 1 else None
+            feat["w_i_next_next"] = sentence[i + 2][WORD] if i < len(sentence) - 2 else None
+
             features.append(sentence[i][TAG] + ' ' + " ".join([f"{k}={v}" for k, v in feat.items()]))
     return features
 
@@ -52,8 +56,10 @@ def print_to_file():
             f.write("".join([s+"\n" for s in feat_sentences]))
 
 
+start = datetime.now()
 input_file = argv[1]
 out_file = argv[2]
+
 sentences, word_count = load_input_file(input_file)
 feat_sentences = create_features()
 print_to_file()
