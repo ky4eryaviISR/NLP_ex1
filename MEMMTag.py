@@ -55,7 +55,7 @@ feature_file = open(feature_file).read().split('\n')
 
 word_tag = {}
 for i in feature_file[0].split(' ')[:-1]:
-    word = i.split(':')[0]
+    word = i.split(':')[0].lower()
     word_tag[word] = set()
     for tag in i.split('::', )[1].split('/'):
         word_tag[word].add(tag)
@@ -122,10 +122,10 @@ def hmm_tag():
     cross_tags = {key: {value: -np.inf for value in labels.keys()}
                   for key in labels.keys()}
     results = []
-    for sentence in sentences[:1]:
+    for sentence in sentences[:10]:
 
-        viterbi = [copy.deepcopy(cross_tags),copy.deepcopy(cross_tags)]
-        viterbi[1]["START"]["START"] = 1
+        viterbi = copy.deepcopy(cross_tags)
+        viterbi["START"]["START"] = 1
         tags = []
         w_p = w_pp = None
         w_n = sentence[1]
@@ -133,30 +133,30 @@ def hmm_tag():
         print(datetime.now())
         prev_tag_set = prev_prev_tag_set = ["START"]
         for j, word in enumerate(sentence):
+            word = word.lower()
+            print(f"{datetime.now()}:START NEW WORD: {word}")
             word_score = copy.deepcopy(cross_tags)
             best_tags = copy.deepcopy(cross_tags)
             if word in word_tag:
                 possible_labels = word_tag[word]
-            elif word.lower() in word_tag:
-                possible_labels = word_tag[word.lower()]
             else:
                 possible_labels = [labels for key, labels in regular_expressions if key.match(word)]
                 possible_labels = possible_labels[0] if possible_labels else labels_no_start
             #print(word)
-            #print(possible_labels)
-            #print(f"{datetime.now()}:RUN OVER TAGS")
+            print(possible_labels)
+            print(f"{datetime.now()}:RUN OVER TAGS")
             for t_second in prev_tag_set:
                 best_score = {k: -np.inf for k in labels.keys()}
-                score = {k: None for k in prev_tag_set}
                 for t_first in prev_prev_tag_set:
                     features = get_features(word, t_p=t_second, t_pp=t_first, w_p=w_p, w_pp=w_pp, w_n=w_n, w_nn=w_nn)
-                    new_score = viterbi[-1][t_second][t_first] + model.predict_proba([convert_2_vector(features)])[0]
+                    new_score = viterbi[t_second][t_first] + model.predict_proba([convert_2_vector(features)])[0]
+                    print(f"{datetime.now()}:RUN OVER labels")
                     for label in possible_labels:
                         if new_score[labels[label]] > best_score[label]:
                             best_score[label] = new_score[labels[label]]
-                            word_score[label][t_second] =  best_score[label]
+                            word_score[label][t_second] = best_score[label]
                             best_tags[label][t_second] = t_first
-                            print(t_first+"_"+t_second+'_'+label+':' + word+' Score ' +str(best_score[label]))
+                    print(f"{datetime.now()}:Finished RUN OVER labels")
             #print(f"{datetime.now()}:FINISHED OVER TAGS")
 
             prev_prev_tag_set = prev_tag_set
@@ -164,12 +164,12 @@ def hmm_tag():
             w_pp, w_n = w_p, w_nn
             w_p = word
             w_nn = sentence[j+3] if len(sentence)-3 > j else None
-            viterbi.append(word_score)
+            viterbi = word_score
             tags.append(best_tags)
 
         cur_score = -np.inf
         last_tag = prev_tag = ""
-        for prev, prev__prev_keys in viterbi[-1].items():
+        for prev, prev__prev_keys in viterbi.items():
             for prev_prev, score in prev__prev_keys.items():
                 if cur_score < score:
                     cur_score = score
