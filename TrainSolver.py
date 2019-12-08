@@ -27,7 +27,7 @@ def replace_labels():
     with open("feature_vec_file", "w") as f_result:
         f_result.write('\n'.join(' '.join(map(str, sl)) for sl in vectors))
     with open('feature_map_file', "w") as f:
-        f.write(' '.join([key+"::"+"/".join([tag for tag in value]) for key, value in word_prev_tags.items()]))
+        f.write(' '.join([key+"~"+"/".join([tag for tag in value]) for key, value in word_prev_tags.items()]))
         f.write('\n')
         f.write("\n".join([f"{key} {value}" for key, value in feature_labels.items()]))
 
@@ -57,10 +57,10 @@ feature_labels = get_features()
 replace_labels()
 
 x_train, y_train = load_svmlight_file("feature_vec_file", zero_based=True)
-for sol in ['sag']:
+for sol in ['saga']:
     print(sol)
     print(datetime.now())
-    model = LogisticRegression(multi_class='auto', solver='saga', tol=0.001)
+    model = LogisticRegression(multi_class='auto', solver='saga', tol=0.005)
     model.fit(x_train, y_train)
     print(model.score(x_train, y_train))
     print(datetime.now())

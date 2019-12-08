@@ -87,20 +87,11 @@ def get_features(word, t_p, t_pp, w_p, w_pp, w_n, w_nn):
         feat["isDigit"] = any([character.isdigit() for character in word])
         feat["upperCase"] = any([character.isupper() for character in word])
         feat["hyphen"] = any([character == '-' for character in word])
-        feat["suf_1"] = word[-1:]
-        feat["suf_2"] = word[-2:]
-        feat["suf_3"] = word[-3:]
-        feat["suf_4"] = word[-4:]
-        feat["pref_1"] = word[:1]
-        feat["pref_2"] = word[:2]
-        feat["pref_3"] = word[:3]
-        feat["pref_4"] = word[:4]
+        for j in range(1, 5, 1):
+            if len(word) >= j:
+                feat["suf_" + str(j)] = word[-j:]
+                feat["pref_" + str(j)] = word[:j]
     return feat
-
-
-
-def get_argmax(stats):
-    return max(stats.iteritems(), key=operator.itemgetter(1))[0]
 
 def convert_2_vector(features):
     vector = np.zeros(len(label_2_index))
@@ -135,6 +126,7 @@ def hmm_tag():
         w_nn = sentence[2]
         prev_tag_set = prev_prev_tag_set = ["START"]
         for j, word in enumerate(sentence):
+            vit = np.full((len(labels),len(labels)),-np.inf)
             #print(f"{datetime.now() - ss}:START NEW WORD")
             word_score = np.full((len(labels), len(labels)), -np.inf)
             best_tags = np.full((len(labels), len(labels)), -np.inf)
@@ -147,36 +139,40 @@ def hmm_tag():
                 possible_labels = possible_labels[0] if possible_labels else labels_no_start
             #print(word)
 
-            print(f"{datetime.now()-ss}:RUN OVER TAGS")
-            print(possible_labels)
-            print(prev_tag_set)
-            print(prev_prev_tag_set)
+            # print(f"{datetime.now()-ss}:RUN OVER TAGS")
+            # print(possible_labels)
+            # print(prev_tag_set)
+            # print(prev_prev_tag_set)
             for t_second in prev_tag_set:
                 t_second_code = labels[t_second]
                 best_score = np.full((len(invert_labels)),-np.inf)
+                temp = {}
+                for lbl in possible_labels:
+                    lbl_code = labels[lbl]
+                    temp[lbl_code] = {}
+
                 for t_first in prev_prev_tag_set:
                     t_first_code = labels[t_first]
                     features = get_features(word, t_p=t_second, t_pp=t_first, w_p=w_p, w_pp=w_pp, w_n=w_n, w_nn=w_nn)
-                    print(f"{datetime.now() - ss}:CALCULATE PREDICT")
+                    # print(f"{datetime.now() - ss}:CALCULATE PREDICT")
                     new_score = viterbi[t_second_code][t_first_code] + model.predict_proba([convert_2_vector(features)])[0]
-                    print(f"{datetime.now() - ss}:FINISHED CALCULATE PREDICT")
-                    print(f"{datetime.now() - ss}:CALCULATE VECTORS")
-                    for label in possible_labels:
-                        lbl_code = int(labels[label])
-                        if new_score[lbl_code] > best_score[lbl_code]:
-                            best_score[lbl_code] = new_score[lbl_code]
-                            word_score[lbl_code][t_second_code] = best_score[lbl_code]
-                            best_tags[lbl_code][t_second_code] = t_first_code
-                    #print(f"{datetime.now() - ss}:FINISHED CALCULATE VECTORS")
-                            #print(t_first+"_"+t_second+'_'+label+':' + word+' Score ' +str(best_score[label]))
-            print(f"{datetime.now()-ss}:FINISHED OVER TAGS")
+                    # print(f"{datetime.now() - ss}:FINISHED CALCULATE PREDICT")
+                    # print(f"{datetime.now() - ss}:CALCULATE VECTORS")
+                    for lbl in possible_labels:
+                        lbl_code = labels[lbl]
+                        temp[lbl_code][t_first_code] = new_score[lbl_code]
+                for lbl in possible_labels:
+                    lbl_code = labels[lbl]
+                    vit[t_second_code][lbl_code] = max(list(temp[lbl_code].values()))
+                    best_tags[t_second_code][lbl_code] = max(temp[lbl_code], key=temp[lbl_code].get)
+            # print(f"{datetime.now()-ss}:FINISHED OVER TAGS")
 
             prev_prev_tag_set = prev_tag_set
             prev_tag_set = possible_labels
             w_pp, w_n = w_p, w_nn
             w_p = word
             w_nn = sentence[j+3] if len(sentence)-3 > j else None
-            viterbi = word_score
+            viterbi = vit
             tags.append(best_tags)
 
         cur_score = -np.inf

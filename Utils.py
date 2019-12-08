@@ -1,7 +1,7 @@
 import re
 import numpy as np
 regular_expressions = {'^ness ': re.compile('\w+ness$'),
-                       '^0-9.0-9 ': re.compile("^\d+\.?\d+$"),
+                       '^0-9.0-9 ': re.compile("^\d+\.?\,?\:?\-?\d+$"),
                        "^A-Z": re.compile("[A-Z]+$"),
                        "^ing": re.compile("\w+ing$"),
                        "^ed": re.compile("\w+ed$"),
@@ -10,6 +10,7 @@ regular_expressions = {'^ness ': re.compile('\w+ness$'),
                        "^s": re.compile("\w+s$"),
                        "^ion": re.compile("\w+ion$"),
                        "^er": re.compile("\w+er$"),
+                       "^ec": re.compile("\w+ec$"),
                        "^al": re.compile("\w+al$")}
 
 

@@ -30,21 +30,22 @@ def create_features():
         for i in range(2, len(sentence)):
             feat = {}
             word = sentence[i][WORD]
-            if word_count[word] < 5:
+            if word_count[word] < 3:
                 feat["isDigit"] = any([character.isdigit() for character in word])
                 feat["upperCase"] = any([character.isupper() for character in word])
                 feat["hyphen"] = any([character == '-' for character in word])
                 for j in range(1, 5, 1):
-                    feat["suf_"+str(j)] = word[-j:]
-                    feat["pref_"+str(j)] = word[:j]
+                    if len(word) >= j:
+                        feat["suf_"+str(j)] = word[-j:].lower()
+                        feat["pref_"+str(j)] = word[:j].lower()
             else:
-                feat["W_i"] = word
+                feat["W_i"] = word.lower()
             feat["t_i_prev"] = sentence[i - 1][TAG]
             feat["t_i_prev_prev"] = sentence[i - 2][TAG] + "_" + sentence[i - 1][TAG]
-            feat["w_i_prev"] = sentence[i - 1][WORD]
-            feat["w_i_prev_prev"] = sentence[i - 2][WORD]
-            feat["w_i_next"] = sentence[i + 1][WORD] if i < len(sentence) - 1 else None
-            feat["w_i_next_next"] = sentence[i + 2][WORD] if i < len(sentence) - 2 else None
+            feat["w_i_prev"] = sentence[i - 1][WORD].lower() if i > 2 else None
+            feat["w_i_prev_prev"] = sentence[i - 2][WORD].lower() if i > 3 else None
+            feat["w_i_next"] = sentence[i + 1][WORD].lower() if i < len(sentence) - 1 else None
+            feat["w_i_next_next"] = sentence[i + 2][WORD].lower() if i < len(sentence) - 2 else None
 
             features.append(sentence[i][TAG] + ' ' + " ".join([f"{k}={v}" for k, v in feat.items()]))
     return features
