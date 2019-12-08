@@ -114,3 +114,6 @@ feature_vec_file
 feature_file
 model_file
 feature_map_file
+out_file
+new
+1.py

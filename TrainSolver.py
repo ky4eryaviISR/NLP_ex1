@@ -7,17 +7,6 @@ from sklearn.datasets import load_svmlight_file
 from sklearn.linear_model import LogisticRegression
 
 
-regular_expressions = {'^ness ': re.compile('\w+ness$'),
-                       '^0-9.0-9 ': re.compile("^\d+\.?\d+$"),
-                       "^A-Z": re.compile("[A-Z]+$"),
-                       "^ing": re.compile("\w+ing$"),
-                       "^ed": re.compile("\w+ed$"),
-                       "^-": re.compile("\w+-\w+$"),
-                       "^'": re.compile("'\w+$"),
-                       "^s": re.compile("\w+s$"),
-                       "^ion": re.compile("\w+ion$"),
-                       "^al": re.compile("\w+al$")}
-
 
 def replace_labels():
     word_prev_tags = {}
@@ -68,7 +57,7 @@ feature_labels = get_features()
 replace_labels()
 
 x_train, y_train = load_svmlight_file("feature_vec_file", zero_based=True)
-for sol in ['saga']:
+for sol in ['sag']:
     print(sol)
     print(datetime.now())
     model = LogisticRegression(multi_class='auto', solver='saga', tol=0.001)

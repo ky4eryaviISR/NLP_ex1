@@ -2,10 +2,40 @@ import copy
 import operator
 import pickle
 import re
-from datetime import datetime
+from datetime import datetime, time
 from sys import argv
 import numpy as np
 
+from calculate_accuracy import calculate_accuracy
+
+
+regular_expressions = [(re.compile('\w+ness$'),['NN','NNP','VB']),
+                           (re.compile("^\d+\.?\d+$"),['CD','NNP','VBN']),
+                           (re.compile("\w+ing$"),['NN','VBG','JJ','IN','NNP','VB','VBP','RB']),
+                           (re.compile("\w+s$"),['POS','VBZ','PRP','NNP','NNS']),
+                           (re.compile("\w+ion$"),['NNP','NN','CD','VB','VBP','JJ','FW',',']),
+                           (re.compile("\w+al$"),['NN','JJ','NNP','RB','VB','VBP','IN']),
+                           (re.compile("\w+-\w+$"), ['NNP', 'JJ', 'NN', 'VBG', 'VBN', 'NNS', 'RB', 'JJR', 'VBD',
+                                                     'CD', 'JJS', 'VB', 'VBP', 'NNP', 'UH', 'RBR', 'VBZ', 'FW']),
+                           (re.compile("'\w+$"), ['POS', 'VBZ', 'VBP', 'MD', 'VBD', 'PRP',
+                                                  'VB', 'NNP', 'CD', 'IN', 'NNS', 'CC']),
+                           (re.compile("\w+ed$"), ['VBN', 'VBD', 'JJ', 'NNP', 'RB', 'NN', 'CD',
+                                                   'VBP', 'VB', 'UH', 'VBG', 'MD', 'NNS', 'RBR']),
+                           (re.compile("[A-Z]+$"), ['NNP', 'DT', 'PRP', 'JJ', 'NN',
+                                                    'NNS', 'IN', 'NNP', 'TO', 'JJS',
+                                                    'VBG', 'CC', 'VBD', 'PRP', 'RB',
+                                                    'MD', 'VB', 'VBN', 'VBP', 'WDT',
+                                                    'VBZ', 'WRB', '$', 'JJR', 'FW',
+                                                    'RP', 'UH', 'CD', 'WP'])
+                           ]
+
+def print_to_file(result, output_file):
+    with open(output_file, "w") as f:
+        for sentence in result:
+            output = ""
+            for tag, word in sentence:
+                output += word + '/' + tag + ' '
+            f.write(output + '\n')
 
 def load_input_file():
     data = []
@@ -22,8 +52,6 @@ out_file = argv[4]
 
 sentences = load_input_file()
 feature_file = open(feature_file).read().split('\n')
-
-words = {key for key in feature_file[0].split()}
 
 word_tag = {}
 for i in feature_file[0].split(' ')[:-1]:
@@ -50,7 +78,7 @@ def get_features(word, t_p, t_pp, w_p, w_pp, w_n, w_nn):
             "w_i_prev": w_p,
             "w_i_prev_prev": w_pp
             }
-    if word in words:
+    if word in word_tag:
         feat["W_i"] = word
     else:
         feat["isDigit"] = any([character.isdigit() for character in word])
@@ -80,41 +108,24 @@ def convert_2_vector(features):
     return vector
 
 
-labels = {k: int(v) for k, v in label_2_index.items() if '=' not in k}
-labels_no_start = {k: int(v) for k, v in label_2_index.items() if '=' not in k and "START" not in k}
-start = max(labels.values())+1
-search_label = copy.deepcopy(labels)
-labels["START"] = start
-invert_labels = {v: k for k, v in label_2_index.items() if '=' not in k}
-invert_labels[str(start)] = "START"
-#cross_tags = np.full((len(labels), len(labels)), -np.inf)
-cross_tags = {key: {value: -np.inf for value in labels.keys()}
-               for key in labels.keys()}
 
 
 def hmm_tag():
-    regular_expressions = [(re.compile('\w+ness$'),['NN','NNP','VB']),
-                            (re.compile("^\d+\.?\d+$"),['CD','NNP','VBN']),
-                            (re.compile("\w+ing$"),['NN','VBG','JJ','IN','NNP','VB','VBP','RB']),
-                            (re.compile("\w+s$"),['POS','VBZ','PRP','NNP','NNS']),
-                            (re.compile("\w+ion$"),['NNP','NN','CD','VB','VBP','JJ','FW',',']),
-                            (re.compile("\w+al$"),['NN','JJ','NNP','RB','VB','VBP','IN']),
-                           (re.compile("\w+-\w+$"), ['NNP', 'JJ', 'NN', 'VBG', 'VBN', 'NNS', 'RB', 'JJR', 'VBD',
-                                                     'CD', 'JJS', 'VB', 'VBP', 'NNP', 'UH', 'RBR', 'VBZ', 'FW']),
-                           (re.compile("'\w+$"), ['POS', 'VBZ', 'VBP', 'MD', 'VBD', 'PRP',
-                                                  'VB', 'NNP', 'CD', 'IN', 'NNS', 'CC']),
-                           (re.compile("\w+ed$"), ['VBN', 'VBD', 'JJ', 'NNP', 'RB', 'NN', 'CD',
-                                                   'VBP', 'VB', 'UH', 'VBG', 'MD', 'NNS', 'RBR']),
-                           (re.compile("[A-Z]+$"), ['NNP', 'DT', 'PRP', 'JJ', 'NN',
-                                                    'NNS', 'IN', 'NNP', 'TO', 'JJS',
-                                                    'VBG', 'CC', 'VBD', 'PRP', 'RB',
-                                                    'MD', 'VB', 'VBN', 'VBP', 'WDT',
-                                                    'VBZ', 'WRB', '$', 'JJR', 'FW',
-                                                    'RP', 'UH', 'CD', 'WP'])
-                           ]
-    for sentence in sentences[:10]:
+    labels = {k: int(v) for k, v in label_2_index.items() if '=' not in k}
+    labels_no_start = {k: int(v) for k, v in label_2_index.items() if '=' not in k and "START" not in k}
+    start = max(labels.values()) + 1
+    search_label = copy.deepcopy(labels)
+    labels["START"] = start
+    invert_labels = {v: k for k, v in label_2_index.items() if '=' not in k}
+    invert_labels[str(start)] = "START"
+    # cross_tags = np.full((len(labels), len(labels)), -np.inf)
+    cross_tags = {key: {value: -np.inf for value in labels.keys()}
+                  for key in labels.keys()}
+    results = []
+    for sentence in sentences[:1]:
+
         viterbi = [copy.deepcopy(cross_tags),copy.deepcopy(cross_tags)]
-        viterbi[0]["START"]["START"] = 1
+        viterbi[1]["START"]["START"] = 1
         tags = []
         w_p = w_pp = None
         w_n = sentence[1]
@@ -131,21 +142,22 @@ def hmm_tag():
             else:
                 possible_labels = [labels for key, labels in regular_expressions if key.match(word)]
                 possible_labels = possible_labels[0] if possible_labels else labels_no_start
-            print(word)
-            print(possible_labels)
-            print(f"{datetime.now()}:RUN OVER TAGS")
+            #print(word)
+            #print(possible_labels)
+            #print(f"{datetime.now()}:RUN OVER TAGS")
             for t_second in prev_tag_set:
                 best_score = {k: -np.inf for k in labels.keys()}
                 score = {k: None for k in prev_tag_set}
                 for t_first in prev_prev_tag_set:
                     features = get_features(word, t_p=t_second, t_pp=t_first, w_p=w_p, w_pp=w_pp, w_n=w_n, w_nn=w_nn)
-                    new_score = model.predict_proba([convert_2_vector(features)])[0]
+                    new_score = viterbi[-1][t_second][t_first] + model.predict_proba([convert_2_vector(features)])[0]
                     for label in possible_labels:
                         if new_score[labels[label]] > best_score[label]:
                             best_score[label] = new_score[labels[label]]
                             word_score[label][t_second] =  best_score[label]
                             best_tags[label][t_second] = t_first
-            print(f"{datetime.now()}:FINISHED OVER TAGS")
+                            print(t_first+"_"+t_second+'_'+label+':' + word+' Score ' +str(best_score[label]))
+            #print(f"{datetime.now()}:FINISHED OVER TAGS")
 
             prev_prev_tag_set = prev_tag_set
             prev_tag_set = possible_labels
@@ -167,13 +179,17 @@ def hmm_tag():
         tag_s = [None]*sen_len
         tag_s[-1] = last_tag
         tag_s[-2] = prev_tag
-        for index in range(len(tags)-1, 1, -1):
-            t_tag = tags[index][last_tag][prev_tag]
-            tag_s[index-2] = t_tag
+        sen = [[last_tag, sentence[-1]], [prev_tag, sentence[-2]]]
+        i = 3
+        for index in range(len(tags) - 1, 1, -1):
+            new_tag = tags[index][last_tag][prev_tag]
             last_tag = prev_tag
-            prev_tag = t_tag
-        #print(' '.join([s+"/"+t for s, t in zip(sentence,tag_s)]))
-        #print(i)
-    #return sentences[start: stop]
+            prev_tag = new_tag
+            sen.append([new_tag, sentence[-i]])
+            i += 1
+        results.append(reversed(sen))
+    return results
 
-hmm_tag()
+results = hmm_tag()
+print_to_file(results, out_file)
+calculate_accuracy('out_file', 'data/ass1-tagger-dev')
