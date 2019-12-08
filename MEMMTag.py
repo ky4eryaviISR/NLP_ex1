@@ -21,6 +21,9 @@ regular_expressions = [(re.compile('\w+ness$'),['NN','NNP','VB']),
                                                   'VB', 'NNP', 'CD', 'IN', 'NNS', 'CC']),
                            (re.compile("\w+ed$"), ['VBN', 'VBD', 'JJ', 'NNP', 'RB', 'NN', 'CD',
                                                    'VBP', 'VB', 'UH', 'VBG', 'MD', 'NNS', 'RBR']),
+                            (re.compile("\w+er$"),['NN', 'NNP', 'JJ', 'RBR', 'RB', 'IN',
+                                              'JJR', 'VB', 'RP', 'PRP$', 'DT', 'VBP',
+                                              'CC', 'PRP', 'WDT']),
                            (re.compile("[A-Z]+$"), ['NNP', 'DT', 'PRP', 'JJ', 'NN',
                                                     'NNS', 'IN', 'NNP', 'TO', 'JJS',
                                                     'VBG', 'CC', 'VBD', 'PRP', 'RB',
@@ -55,7 +58,7 @@ feature_file = open(feature_file).read().split('\n')
 
 word_tag = {}
 for i in feature_file[0].split(' ')[:-1]:
-    word = i.split(':')[0].lower()
+    word = i.split(':')[0]
     word_tag[word] = set()
     for tag in i.split('::', )[1].split('/'):
         word_tag[word].add(tag)
@@ -114,50 +117,59 @@ def hmm_tag():
     labels = {k: int(v) for k, v in label_2_index.items() if '=' not in k}
     labels_no_start = {k: int(v) for k, v in label_2_index.items() if '=' not in k and "START" not in k}
     start = max(labels.values()) + 1
-    search_label = copy.deepcopy(labels)
     labels["START"] = start
     invert_labels = {v: k for k, v in label_2_index.items() if '=' not in k}
     invert_labels[str(start)] = "START"
-    # cross_tags = np.full((len(labels), len(labels)), -np.inf)
-    cross_tags = {key: {value: -np.inf for value in labels.keys()}
-                  for key in labels.keys()}
     results = []
-    for sentence in sentences[:10]:
-
-        viterbi = copy.deepcopy(cross_tags)
-        viterbi["START"]["START"] = 1
+    ss=datetime.now()
+    i_num = 0
+    for sentence in sentences[:2]:
+        print(f"******************************{i_num} {datetime.now() - ss}******************************")
+        i_num += 1
+        ss = datetime.now()
+        viterbi = np.full((len(labels),len(labels)),-np.inf)
+        viterbi[labels["START"]][labels["START"]] = 1
         tags = []
         w_p = w_pp = None
         w_n = sentence[1]
         w_nn = sentence[2]
-        print(datetime.now())
         prev_tag_set = prev_prev_tag_set = ["START"]
         for j, word in enumerate(sentence):
-            word = word.lower()
-            print(f"{datetime.now()}:START NEW WORD: {word}")
-            word_score = copy.deepcopy(cross_tags)
-            best_tags = copy.deepcopy(cross_tags)
-            if word in word_tag:
+            #print(f"{datetime.now() - ss}:START NEW WORD")
+            word_score = np.full((len(labels), len(labels)), -np.inf)
+            best_tags = np.full((len(labels), len(labels)), -np.inf)
+            if word in word_tag.keys():
                 possible_labels = word_tag[word]
+            elif word.lower() in word_tag.keys():
+                possible_labels = word_tag[word.lower()]
             else:
                 possible_labels = [labels for key, labels in regular_expressions if key.match(word)]
                 possible_labels = possible_labels[0] if possible_labels else labels_no_start
             #print(word)
+
+            print(f"{datetime.now()-ss}:RUN OVER TAGS")
             print(possible_labels)
-            print(f"{datetime.now()}:RUN OVER TAGS")
+            print(prev_tag_set)
+            print(prev_prev_tag_set)
             for t_second in prev_tag_set:
-                best_score = {k: -np.inf for k in labels.keys()}
+                t_second_code = labels[t_second]
+                best_score = np.full((len(invert_labels)),-np.inf)
                 for t_first in prev_prev_tag_set:
+                    t_first_code = labels[t_first]
                     features = get_features(word, t_p=t_second, t_pp=t_first, w_p=w_p, w_pp=w_pp, w_n=w_n, w_nn=w_nn)
-                    new_score = viterbi[t_second][t_first] + model.predict_proba([convert_2_vector(features)])[0]
-                    print(f"{datetime.now()}:RUN OVER labels")
+                    print(f"{datetime.now() - ss}:CALCULATE PREDICT")
+                    new_score = viterbi[t_second_code][t_first_code] + model.predict_proba([convert_2_vector(features)])[0]
+                    print(f"{datetime.now() - ss}:FINISHED CALCULATE PREDICT")
+                    print(f"{datetime.now() - ss}:CALCULATE VECTORS")
                     for label in possible_labels:
-                        if new_score[labels[label]] > best_score[label]:
-                            best_score[label] = new_score[labels[label]]
-                            word_score[label][t_second] = best_score[label]
-                            best_tags[label][t_second] = t_first
-                    print(f"{datetime.now()}:Finished RUN OVER labels")
-            #print(f"{datetime.now()}:FINISHED OVER TAGS")
+                        lbl_code = int(labels[label])
+                        if new_score[lbl_code] > best_score[lbl_code]:
+                            best_score[lbl_code] = new_score[lbl_code]
+                            word_score[lbl_code][t_second_code] = best_score[lbl_code]
+                            best_tags[lbl_code][t_second_code] = t_first_code
+                    #print(f"{datetime.now() - ss}:FINISHED CALCULATE VECTORS")
+                            #print(t_first+"_"+t_second+'_'+label+':' + word+' Score ' +str(best_score[label]))
+            print(f"{datetime.now()-ss}:FINISHED OVER TAGS")
 
             prev_prev_tag_set = prev_tag_set
             prev_tag_set = possible_labels
@@ -169,23 +181,23 @@ def hmm_tag():
 
         cur_score = -np.inf
         last_tag = prev_tag = ""
-        for prev, prev__prev_keys in viterbi.items():
-            for prev_prev, score in prev__prev_keys.items():
-                if cur_score < score:
-                    cur_score = score
-                    prev_tag = prev_prev
-                    last_tag = prev
+        for i in range(viterbi.shape[0]):
+            for j in range(viterbi.shape[0]):
+                if cur_score < viterbi[i][j]:
+                    cur_score = viterbi[i][j]
+                    prev_tag = j
+                    last_tag = i
         sen_len=len(sentence)
         tag_s = [None]*sen_len
-        tag_s[-1] = last_tag
-        tag_s[-2] = prev_tag
-        sen = [[last_tag, sentence[-1]], [prev_tag, sentence[-2]]]
+        tag_s[-1] = invert_labels[last_tag]
+        tag_s[-2] = invert_labels[prev_tag]
+        sen = [[tag_s[-1], sentence[-1]], [tag_s[-2], sentence[-2]]]
         i = 3
         for index in range(len(tags) - 1, 1, -1):
-            new_tag = tags[index][last_tag][prev_tag]
+            new_tag = int(tags[index][last_tag][prev_tag])
             last_tag = prev_tag
             prev_tag = new_tag
-            sen.append([new_tag, sentence[-i]])
+            sen.append([invert_labels[new_tag], sentence[-i]])
             i += 1
         results.append(reversed(sen))
     return results

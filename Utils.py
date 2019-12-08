@@ -9,6 +9,7 @@ regular_expressions = {'^ness ': re.compile('\w+ness$'),
                        "^'": re.compile("'\w+$"),
                        "^s": re.compile("\w+s$"),
                        "^ion": re.compile("\w+ion$"),
+                       "^er": re.compile("\w+er$"),
                        "^al": re.compile("\w+al$")}
 
 
