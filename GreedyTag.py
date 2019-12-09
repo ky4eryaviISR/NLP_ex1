@@ -1,3 +1,4 @@
+from datetime import datetime
 from sys import argv
 import operator
 from Utils import Utils
@@ -23,9 +24,10 @@ def greedyStart(sentences):
 
 
 if __name__ == "__main__":
+    print(datetime.now())
     input_f = argv[1]
-    e_output = argv[2]
-    q_output = argv[3]
+    q_output = argv[2]
+    e_output = argv[3]
     output_f = argv[4]
     gamma = [0.15533849, 0.02582799, 0.81883352]
     utils = Utils(gamma)
@@ -33,4 +35,4 @@ if __name__ == "__main__":
     sentences = utils.load_input_file(input_f)
     result = greedyStart(sentences)
     utils.print_to_file(result, output_f)
-    calculate_accuracy(output_f, 'data/ass1-tagger-dev')
+    print(datetime.now())

@@ -100,15 +100,15 @@ def memm_tag(sentences, model, label_2_index, word_tag):
     labels_no_start = copy.copy(labels)
     invert_labels = {v: k for k, v in label_2_index.items() if '=' not in k}
     labels["START"] = max(labels.values()) + 1
-    for sentence in sentences:
+    for sentence in sentences[:1]:
         # initialize start of the sentence
         viterbi = np.full((len(labels), len(labels)), -np.inf)
         tags = []
         viterbi[labels["START"], labels["START"]] = 1
 
         w_p = w_pp = None
-        w_n = sentence[1].lower() if len(sentence) > 1 else None
-        w_nn = sentence[2].lower() if len(sentence) > 2 else None
+        w_n = sentence[1] if len(sentence) > 1 else None
+        w_nn = sentence[2] if len(sentence) > 2 else None
         p_set_tag = pp_set_tag = ["START"]
         pp_set_tag = {i: labels[i] for i in pp_set_tag}
         # run over each word
@@ -116,8 +116,11 @@ def memm_tag(sentences, model, label_2_index, word_tag):
 
             vit = np.full((len(labels), len(labels)), -np.inf)
             best_tags = np.full((len(labels), len(labels)), -np.inf)
-            word = word.lower()
+            t_word = word.lower()
             if word in word_tag.keys():
+                possible_labels = word_tag[word]
+            elif t_word in word_tag.keys():
+                word = t_word
                 possible_labels = word_tag[word]
             else:
                 possible_labels = [labels for key, labels in regular_expressions if key.match(word)]
@@ -147,7 +150,7 @@ def memm_tag(sentences, model, label_2_index, word_tag):
             p_set_tag = possible_labels
             w_pp, w_n = w_p, w_nn
             w_p = word
-            w_nn = sentence[i + 3].lower() if len(sentence) - 3 > i else None
+            w_nn = sentence[i + 3] if len(sentence) - 3 > i else None
             viterbi = vit
             tags.append(best_tags)
 
@@ -202,15 +205,16 @@ if __name__ == "__main__":
     for i in range(0, num_sentences, steps):
         args.append([sentences[i:i+steps], model, label_2_index, word_tag])
 
-    pool = mp.Pool(mp.cpu_count())
-    results = pool.starmap(memm_tag, args)
+    #pool = mp.Pool(mp.cpu_count())
+    #results = pool.starmap(memm_tag, args)
+    results =memm_tag(sentences,model,label_2_index,word_tag)
     print(f"{datetime.now()}: END")
     print(f"{datetime.now()-start}: END")
-    results = reduce(lambda x, y: x + y, results)
+    #results = reduce(lambda x, y: x + y, results)
 
 
     print_to_file(results, out_file)
-    calculate_accuracy('out', 'data/ass1-tagger-dev')
+    calculate_accuracy(out_file, 'data/ass1-tagger-dev')
 
 
 

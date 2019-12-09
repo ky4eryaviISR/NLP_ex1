@@ -12,8 +12,8 @@ import multiprocessing as mp
 
 start = datetime.now()
 input_f = argv[1]
-e_output = argv[2]
-q_output = argv[3]
+q_output = argv[2]
+e_output = argv[3]
 output_f = argv[4]
 gamma = [0.01, 0.09, 0.9]
 utils = Utils()
@@ -74,7 +74,6 @@ def viterbi_start(sentences):
             last_tag = prev_tag
             prev_tag = sentences[i][index][0]
         sentences[i] = sentences[i][2:]
-        #print(i)
     return sentences
 
 
@@ -89,5 +88,4 @@ if __name__ == "__main__":
     print(datetime.now())
     results = viterbi_start(sentences)
     utils.print_to_file(results, output_f)
-    calculate_accuracy('data/viterbi_hmm_output', 'data/ass1-tagger-dev')
     print(datetime.now())

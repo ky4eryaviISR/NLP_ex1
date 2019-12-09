@@ -25,9 +25,10 @@ out_file = argv[4]
 sentences = load_input_file()
 feature_file = open(feature_file).read().split('\n')
 
-words = {key.split(':')[0] for key in feature_file[0].split()}
-label_2_index = {line.split()[0]: line.split()[1] for line in feature_file[1:]}
-index_2_label = {line.split()[1]: line.split()[0] for line in feature_file[1:]}
+words = [word for word in feature_file[1].split()]
+
+label_2_index = {line.split()[0]: line.split()[1] for line in feature_file[3:]}
+index_2_label = {line.split()[1]: line.split()[0] for line in feature_file[3:]}
 model = pickle.load(open(model, 'rb'))
 
 def print_to_file(result, output_file):
@@ -62,14 +63,10 @@ def get_features(word, t_p, t_pp, w_p, w_pp, w_n, w_nn):
         feat["isDigit"] = any([character.isdigit() for character in word])
         feat["upperCase"] = any([character.isupper() for character in word])
         feat["hyphen"] = any([character == '-' for character in word])
-        feat["suf_1"] = word[-1:]
-        feat["suf_2"] = word[-2:]
-        feat["suf_3"] = word[-3:]
-        feat["suf_4"] = word[-4:]
-        feat["pref_1"] = word[:1]
-        feat["pref_2"] = word[:2]
-        feat["pref_3"] = word[:3]
-        feat["pref_4"] = word[:4]
+        for j in range(1, 5, 1):
+            if len(word) >= j:
+                feat["suf_" + str(j)] = word[-j:]
+                feat["pref_" + str(j)] = word[:j]
     return feat
 
 
@@ -100,5 +97,4 @@ if __name__ == '__main__':
     results = memm_greedy(sentences)
     with open(out_file, 'w') as f:
         f.write('\n'.join(' '.join(map(str, row)) for row in results))
-    calculate_accuracy(out_file, 'data/ass1-tagger-dev')
     print(datetime.now() - start)

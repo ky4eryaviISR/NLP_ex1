@@ -11,7 +11,8 @@ regular_expressions = {'^ness ': re.compile('\w+ness$'),
                        "^ion": re.compile("\w+ion$"),
                        "^er": re.compile("\w+er$"),
                        "^ec": re.compile("\w+ec$"),
-                       "^al": re.compile("\w+al$")}
+                       "^al": re.compile("\w+al$"),
+                       '^Aa': re.compile('\w[A-Z]+[a-z]+$')}
 
 
 class Utils(object):
@@ -29,7 +30,6 @@ class Utils(object):
 
     def load_input_file(self, input_file):
         data = []
-        i = 0
         with open(input_file) as f:
             for line in f:
                 data.append([["START", "*"], ["START", "*"]] + [['*', word] for word in line.split()])

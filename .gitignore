@@ -118,3 +118,8 @@ out_file
 new
 out
 feature_map_file
+ner/
+assignment1/
+features_file
+features_file_partial
+details.txt

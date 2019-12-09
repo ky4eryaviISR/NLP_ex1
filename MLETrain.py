@@ -39,7 +39,7 @@ def parse_file(input_file, e_output, q_output):
             second = third.rsplit('/', 1)[1]
 
     unk_list = [[word, tag, count] for word, tags in word_dict.items()
-                for tag, count in tags.items() if count < 5 and not word.startswith('^')]
+                for tag, count in tags.items() if count < 3 and not word.startswith('^')]
     for word, tag, value in unk_list:
         if tag in word_dict["*UNK*"].keys():
             word_dict["*UNK*"][tag] += value
@@ -60,6 +60,6 @@ def parse_file(input_file, e_output, q_output):
 
 if __name__ == "__main__":
     input_f = argv[1]
-    e_output = argv[2]
-    q_output = argv[3]
+    q_output = argv[2]
+    e_output = argv[3]
     parse_file(input_f, e_output, q_output)
