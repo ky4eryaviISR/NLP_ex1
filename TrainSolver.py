@@ -57,13 +57,11 @@ feature_labels = get_features()
 replace_labels()
 
 x_train, y_train = load_svmlight_file("feature_vec_file", zero_based=True)
-for sol in ['saga']:
-    print(sol)
-    print(datetime.now())
-    model = LogisticRegression(multi_class='auto', solver='saga', tol=0.005)
-    model.fit(x_train, y_train)
-    print(model.score(x_train, y_train))
-    print(datetime.now())
+print(datetime.now())
+model = LogisticRegression(multi_class='auto', solver='saga', tol=0.001)
+model.fit(x_train, y_train)
+print(model.score(x_train, y_train))
+print(datetime.now())
 
 
 pickle.dump(model, open(out_file, 'wb'))

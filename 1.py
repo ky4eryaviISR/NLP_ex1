@@ -1,3 +1,4 @@
+import copy
 import pickle
 import re
 from functools import reduce
@@ -8,6 +9,9 @@ import numpy as np
 from datetime import datetime
 import multiprocessing as mp
 from scipy import sparse
+
+from calculate_accuracy import calculate_accuracy
+
 regular_expressions = [(re.compile('\w+ness$'),['NN','NNP','VB']),
                            (re.compile("^\d+\.?\,?\:?\-?\d+$"),['CD','NNP','VBN']),
                            (re.compile("\w+ing$"),['NN','VBG','JJ','IN','NNP','VB','VBP','RB']),
@@ -89,51 +93,89 @@ def convert_2_vector(features):
             vector[int(label_2_index[feature])] = 1
     return vector
 
+
 def memm_tag(sentences, model, label_2_index, word_tag):
-
-    cnt=0
-
-
+    results = []
     labels = {k: int(v) for k, v in label_2_index.items() if '=' not in k}
+    labels_no_start = copy.copy(labels)
     invert_labels = {v: k for k, v in label_2_index.items() if '=' not in k}
     labels["START"] = max(labels.values()) + 1
-    for sentence in sentences[:10]:
+    for sentence in sentences:
         # initialize start of the sentence
+        viterbi = np.full((len(labels), len(labels)), -np.inf)
+        tags = []
+        viterbi[labels["START"], labels["START"]] = 1
+
         w_p = w_pp = None
         w_n = sentence[1].lower() if len(sentence) > 1 else None
         w_nn = sentence[2].lower() if len(sentence) > 2 else None
         p_set_tag = pp_set_tag = ["START"]
-        pp_set_tag = {i:labels[i] for i in pp_set_tag}
-        #print(cnt)
-        cnt += 1
+        pp_set_tag = {i: labels[i] for i in pp_set_tag}
         # run over each word
         for i, word in enumerate(sentence):
-            if word.lower() in word_tag.keys():
-                possible_labels = word_tag[word.lower()]
+
+            vit = np.full((len(labels), len(labels)), -np.inf)
+            best_tags = np.full((len(labels), len(labels)), -np.inf)
+            word = word.lower()
+            if word in word_tag.keys():
+                possible_labels = word_tag[word]
             else:
                 possible_labels = [labels for key, labels in regular_expressions if key.match(word)]
-                possible_labels = possible_labels[0] if possible_labels else labels
-            #print(word)
-            #print(possible_labels)
+                possible_labels = possible_labels[0] if possible_labels else labels_no_start
             p_set_tag = {i: labels[i] for i in p_set_tag}
-            # if len(p_set_tag)>40:
-            #     print(w_p)
-            #     print(cnt)
-            #     cnt+=1
-
             for t_p, t_p_code in p_set_tag.items():
                 features = []
+                keys = []
+                v_temp = np.zeros((len(pp_set_tag),len(labels_no_start)))
+                v_cnt = 0
                 for t_pp, t_pp_code in pp_set_tag.items():
                     vec = convert_2_vector(get_features(word, t_p=t_p, t_pp=t_pp, w_p=w_p,
                                                         w_pp=w_pp, w_n=w_n, w_nn=w_nn,word_tag=word_tag))
                     features.append(vec)
-                x = model.predict_proba(features)
+                    keys.append(t_pp_code)
+                    v_temp[v_cnt, :] = viterbi[t_p_code][t_pp_code]
+                    v_cnt += 1
+                predicted = v_temp + model.predict_proba(features)
+
+                for lbl in possible_labels:
+                    lbl_code = labels[lbl]
+                    tag_value = predicted[:, lbl_code]
+                    vit[lbl_code, t_p_code] = max(tag_value)
+                    best_tags[lbl_code][t_p_code] = keys[int(np.argmax(tag_value))]
 
             pp_set_tag = p_set_tag
             p_set_tag = possible_labels
             w_pp, w_n = w_p, w_nn
             w_p = word
             w_nn = sentence[i + 3].lower() if len(sentence) - 3 > i else None
+            viterbi = vit
+            tags.append(best_tags)
+
+        cur_score = -np.inf
+        last_tag = prev_tag = ""
+        for i in range(viterbi.shape[0]):
+            for j in range(viterbi.shape[0]):
+                if cur_score < viterbi[i][j]:
+                    cur_score = viterbi[i][j]
+                    prev_tag = j
+                    last_tag = i
+
+        sen_len = len(sentence)
+        tag_s = [None] * sen_len
+        tag_s[-1] = invert_labels[last_tag]
+        sen = [[tag_s[-1], sentence[-1]]]
+        if sen_len != 1:
+            tag_s[-2] = invert_labels[prev_tag]
+            sen.append([tag_s[-2], sentence[-2]])
+        i = 3
+        for index in range(len(tags) - 1, 1, -1):
+            new_tag = int(tags[index][last_tag][prev_tag])
+            last_tag = prev_tag
+            prev_tag = new_tag
+            sen.append([invert_labels[new_tag], sentence[-i]])
+            i += 1
+        results.append(reversed(sen))
+    return results
 
 
 input_file = argv[1]
@@ -162,14 +204,13 @@ if __name__ == "__main__":
 
     pool = mp.Pool(mp.cpu_count())
     results = pool.starmap(memm_tag, args)
-    print(f"{start}: STARTED")
     print(f"{datetime.now()}: END")
+    print(f"{datetime.now()-start}: END")
     results = reduce(lambda x, y: x + y, results)
-    #results = memm_tag(sentences,model,label_2_index)
 
 
-    #print_to_file(results, out_file)
-    #calculate_accuracy('out_file', 'data/ass1-tagger-dev')
+    print_to_file(results, out_file)
+    calculate_accuracy('out', 'data/ass1-tagger-dev')
 
 
 

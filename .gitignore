@@ -116,3 +116,5 @@ model_file
 feature_map_file
 out_file
 new
+out
+feature_map_file
