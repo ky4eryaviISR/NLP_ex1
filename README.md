@@ -1,5 +1,5 @@
 # NLP_1
-HomeWork in NLP Bar Ilan
+HomeWork in NLP Bar Ilan University.
 
 ## Creating Transmission and Emission file
 python MLETrain.py data/ass1-tagger-train q.mle e.mle
@@ -22,3 +22,5 @@ python GreedyMaxEntTag.py data/ass1-tagger-dev-input model_file feature_map_file
 ## MEMM using Viterbi Algorithm
 python MEMMTag.py data/ass1-tagger-dev-input model_file feature_map_file memm-viterbi-predictions.txt
 
+## Question Answering
+Answers can be found in discussion pdf file
